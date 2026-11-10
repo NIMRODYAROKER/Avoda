@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0B10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Avoda — שעון משמרות</title>
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-title" content="Avoda">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ================= צבעים ובסיס ================= */
+:root{
+  --bg:#0B0B10;
+  --glass:rgba(255,255,255,.06);
+  --glass-2:rgba(255,255,255,.1);
+  --stroke:rgba(255,255,255,.1);
+  --text:#FFFFFF;
+  --muted:#A3A3AD;
+  --red:#FF2D4B;
+  --red-deep:#C3002F;
+  --coral:#FF7A59;
+  --grad:linear-gradient(135deg,#FF2D4B 0%,#FF5A5F 55%,#FF8A5B 100%);
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:"Heebo",system-ui,-apple-system,Arial,sans-serif;color:var(--text);background:var(--bg);
+  min-height:100vh;line-height:1.45;-webkit-font-smoothing:antialiased;overflow-x:hidden
+}
+/* זוהר צבעוני ברקע */
+body::before{
+  content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(40% 35% at 85% 10%,rgba(255,45,75,.38),transparent 70%),
+    radial-gradient(35% 30% at 10% 45%,rgba(255,138,91,.18),transparent 70%),
+    radial-gradient(45% 35% at 60% 100%,rgba(195,0,47,.32),transparent 70%);
+  animation:float 18s ease-in-out infinite alternate
+}
+@keyframes float{to{transform:translate(-3%,2%) scale(1.05)}}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--coral);outline-offset:3px;border-radius:12px}
+.num{font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+.app{max-width:480px;margin:0 auto;padding:0 20px calc(120px + env(safe-area-inset-bottom))}
+
+/* ================= כותרת ================= */
+.top{display:flex;justify-content:space-between;align-items:center;padding:calc(18px + env(safe-area-inset-top)) 0 4px}
+.logo{display:inline-flex;align-items:center;gap:10px;font-size:23px;font-weight:800;letter-spacing:-.6px}
+.logo .mark{width:36px;height:36px;border-radius:10px;box-shadow:0 6px 18px rgba(255,45,75,.4);flex:none}
+.logo .word{background:linear-gradient(90deg,#fff 40%,#FFB3A0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.me{display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 14px;border-radius:999px;background:var(--glass);border:1px solid var(--stroke);font-size:14px;font-weight:600;transition:background .2s}
+.me:hover{background:var(--glass-2)}
+.me i{width:30px;height:30px;border-radius:50%;background:var(--grad);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:14px}
+
+/* ================= מסכים ================= */
+.view{display:none}
+.view.active{display:block;animation:in .45s var(--ease)}
+@keyframes in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ================= מסך ראשי ================= */
+.home{min-height:calc(100vh - 200px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px 0}
+.status{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 14px;border-radius:999px;background:var(--glass);border:1px solid var(--stroke);font-size:13.5px;font-weight:600;color:var(--muted)}
+.status i{width:8px;height:8px;border-radius:50%;background:#5a5a66}
+.running .status{color:#fff;background:rgba(255,45,75,.15);border-color:rgba(255,45,75,.35)}
+.running .status i{background:var(--red);box-shadow:0 0 10px var(--red);animation:blink 1.3s infinite}
+@keyframes blink{50%{opacity:.3}}
+.timer{font-size:clamp(56px,17vw,76px);font-weight:800;letter-spacing:-2px;line-height:1;margin:22px 0 8px}
+.earn{font-size:17px;color:var(--muted);min-height:26px}
+.earn b{color:#fff;font-weight:700}
+
+/* הכפתור הגדול */
+.punch{
+  position:relative;width:min(230px,62vw);aspect-ratio:1;border-radius:50%;margin:34px auto 18px;
+  background:var(--grad);color:#fff;font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.15;
+  box-shadow:0 20px 60px rgba(255,45,75,.45),inset 0 2px 0 rgba(255,255,255,.35),inset 0 -10px 30px rgba(120,0,30,.35);
+  transition:transform .25s var(--ease),box-shadow .25s
+}
+.punch::after{content:"";position:absolute;inset:-14px;border-radius:50%;border:1px solid rgba(255,90,95,.35)}
+.punch:hover{transform:scale(1.03)}
+.punch:active{transform:scale(.95)}
+.punch small{display:block;font-size:14px;font-weight:500;opacity:.85;margin-top:4px;letter-spacing:0}
+.running .punch{background:#fff;color:var(--bg);box-shadow:0 20px 60px rgba(255,255,255,.12)}
+.running .punch::after{border-color:rgba(255,45,75,.6);animation:ring 2.2s var(--ease) infinite}
+@keyframes ring{0%{transform:scale(.95);opacity:1}100%{transform:scale(1.18);opacity:0}}
+.link{font-size:15px;font-weight:600;color:var(--coral);padding:10px 14px;border-radius:12px;transition:background .2s}
+.link:hover{background:var(--glass)}
+.link.dim{color:var(--muted)}
+
+/* כרטיס זכוכית */
+.glass{background:var(--glass);border:1px solid var(--stroke);border-radius:26px;padding:20px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.panel{width:100%;text-align:start;margin-top:8px;animation:in .4s var(--ease)}
+.panel h3{font-size:18px;font-weight:700;margin-bottom:4px}
+.panel p.sub{font-size:14px;color:var(--muted);margin-bottom:14px}
+
+/* סיום משמרת */
+.done-total{text-align:center;padding:4px 0 16px}
+.done-total .k{font-size:14px;color:var(--muted)}
+.done-total .v{font-size:56px;font-weight:900;letter-spacing:-2px;line-height:1.05;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.done-total .s{font-size:14.5px;color:var(--muted);margin-top:4px}
+.done-total .s b{color:#fff;font-weight:600}
+
+/* שדות */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.field label{font-size:13.5px;font-weight:600;color:var(--muted)}
+.input{
+  width:100%;height:56px;border-radius:16px;border:1px solid var(--stroke);background:rgba(255,255,255,.05);
+  padding:0 16px;font-size:20px;font-weight:600;transition:border-color .2s,background .2s;color-scheme:dark
+}
+.input:focus{outline:0;border-color:var(--coral);background:rgba(255,255,255,.08)}
+.input::placeholder{color:#6d6d78;font-weight:500}
+.money{position:relative}
+.money .input{padding-inline-end:42px}
+.money::after{content:"₪";position:absolute;inset-inline-end:16px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:18px;pointer-events:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quick{display:flex;gap:8px;margin:-2px 0 16px}
+.quick button{flex:1;height:40px;border-radius:12px;background:var(--glass);border:1px solid var(--stroke);font-weight:600;font-size:14.5px;transition:background .2s,border-color .2s}
+.quick button:hover{background:rgba(255,45,75,.15);border-color:rgba(255,45,75,.4)}
+
+/* כפתורים */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:56px;border-radius:18px;font-size:17px;font-weight:700;transition:transform .2s var(--ease),filter .2s,background .2s}
+.btn:active{transform:scale(.98)}
+.btn-grad{background:var(--grad);color:#fff;box-shadow:0 10px 30px rgba(255,45,75,.3)}
+.btn-grad:hover{filter:brightness(1.08)}
+.btn-glass{background:var(--glass);border:1px solid var(--stroke)}
+.btn-glass:hover{background:var(--glass-2)}
+.btn-text{height:46px;color:var(--muted);font-weight:600;font-size:15px}
+.btn-danger{height:46px;color:var(--red);font-weight:600;font-size:15px}
+
+/* ================= היסטוריה ================= */
+.page-title{font-size:32px;font-weight:900;letter-spacing:-1px;margin:18px 0 14px}
+.month{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.month b{font-size:18px;font-weight:700}
+.ib{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--glass);border:1px solid var(--stroke);transition:background .2s}
+.ib:hover{background:var(--glass-2)}
+.ib svg{width:20px;height:20px}
+.sum{position:relative;overflow:hidden;border-radius:28px;padding:22px;background:var(--grad);box-shadow:0 18px 50px rgba(255,45,75,.3)}
+.sum::after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.12);top:-90px;left:-60px}
+.sum .k{font-size:14px;opacity:.85;font-weight:500}
+.sum .v{font-size:50px;font-weight:900;letter-spacing:-2px;line-height:1.05;margin:2px 0 16px}
+.sum .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;position:relative;z-index:1}
+.sum .grid div{background:rgba(0,0,0,.16);border-radius:16px;padding:10px 12px}
+.sum .grid b{display:block;font-size:18px;font-weight:800}
+.sum .grid span{font-size:12.5px;opacity:.85}
+.list{display:flex;flex-direction:column;gap:10px;margin:16px 0}
+.item{display:flex;align-items:center;gap:14px;width:100%;padding:14px;text-align:start;border-radius:20px;background:var(--glass);border:1px solid var(--stroke);transition:background .2s,transform .2s var(--ease)}
+.item:hover{background:var(--glass-2);transform:translateY(-1px)}
+.day{width:48px;height:48px;flex:none;border-radius:15px;background:rgba(255,255,255,.07);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.day b{font-size:19px;font-weight:800}
+.day span{font-size:11px;color:var(--muted);margin-top:3px}
+.item .mid{flex:1;min-width:0}
+.item .t{font-weight:700;font-size:16px}
+.item .m{font-size:13px;color:var(--muted)}
+.item .end{text-align:end}
+.item .p{font-weight:800;font-size:17px}
+.item .tp{font-size:12.5px;color:var(--coral);font-weight:600}
+.empty{text-align:center;color:var(--muted);padding:40px 10px;font-size:15px}
+
+/* ================= ניווט תחתון ================= */
+nav.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));z-index:30;display:flex;gap:4px;padding:6px;border-radius:999px;background:rgba(25,25,32,.8);border:1px solid var(--stroke);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 10px 40px rgba(0,0,0,.4)}
+nav.tabs button{display:flex;align-items:center;gap:8px;height:48px;padding:0 22px;border-radius:999px;font-size:15px;font-weight:700;color:var(--muted);transition:background .25s,color .25s}
+nav.tabs button svg{width:20px;height:20px}
+nav.tabs button[aria-current="page"]{background:#fff;color:var(--bg)}
+
+/* ================= חלון תחתון ================= */
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;z-index:60;left:0;right:0;bottom:0;margin:0 auto;max-width:480px;max-height:92vh;overflow-y:auto;background:#16161D;border:1px solid var(--stroke);border-bottom:0;border-radius:28px 28px 0 0;padding:12px 20px calc(22px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .4s var(--ease)}
+.sheet.open{transform:none}
+.grab{width:40px;height:5px;border-radius:5px;background:#3a3a44;margin:0 auto 16px}
+.sheet h2{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:16px}
+.opt{border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--stroke);padding:14px 16px;margin-bottom:10px}
+.opt-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.opt-head b{font-size:15.5px;font-weight:700}
+.opt-head span{display:block;font-size:12.5px;color:var(--muted);font-weight:400}
+.opt .row2{margin-top:12px}
+.opt .field{margin-bottom:0}
+.opt .input{height:48px;font-size:17px}
+.switch{width:50px;height:30px;flex:none;border-radius:999px;background:#3a3a44;position:relative;transition:background .25s}
+.switch::after{content:"";position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:right .25s var(--ease)}
+.switch[aria-checked="true"]{background:var(--red)}
+.switch[aria-checked="true"]::after{right:23px}
+.sec{font-size:13px;font-weight:700;color:var(--muted);margin:18px 2px 10px}
+
+/* ================= כניסה ================= */
+.welcome{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:40px 0}
+.welcome .logo{font-size:52px;letter-spacing:-2px;gap:16px;align-self:flex-start}
+.welcome .logo .mark{width:72px;height:72px;border-radius:20px}
+.welcome p{font-size:18px;color:var(--muted);margin:6px 0 28px}
+.users{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.user{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:20px;background:var(--glass);border:1px solid var(--stroke);text-align:start;transition:background .2s}
+.user:hover{background:var(--glass-2)}
+.user i{width:44px;height:44px;border-radius:50%;background:var(--grad);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:18px}
+.user b{font-size:17px}
+
+.toast{position:fixed;z-index:80;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translate(-50%,-20px);background:#fff;color:var(--bg);padding:12px 20px;border-radius:999px;font-size:15px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s var(--ease);white-space:nowrap;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ================= כניסה: בחירת משתמש ================= -->
+<div class="app" id="welcome" hidden>
+  <div class="welcome">
+    <div class="logo" dir="ltr"><svg class="mark" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="LG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF2D4B"/><stop offset=".55" stop-color="#FF5A5F"/><stop offset="1" stop-color="#FF8A5B"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="url(#LG)"/><path d="M146 386 L256 132 L366 386" fill="none" stroke="#fff" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/><circle cx="256" cy="318" r="30" fill="#fff"/></svg><span class="word">Avoda</span></div>
+    <p>לוחצים כשמתחילים, לוחצים כשמסיימים.</p>
+    <div class="users" id="users"></div>
+    <button class="btn btn-grad" data-act="new-user">משתמש חדש</button>
+  </div>
+</div>
+
+<!-- ================= האפליקציה ================= -->
+<div class="app" id="main" hidden>
+  <header class="top">
+    <div class="logo" dir="ltr"><svg class="mark" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="LG2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF2D4B"/><stop offset=".55" stop-color="#FF5A5F"/><stop offset="1" stop-color="#FF8A5B"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="url(#LG2)"/><path d="M146 386 L256 132 L366 386" fill="none" stroke="#fff" stroke-width="54" stroke-linecap="round" stroke-linejoin="round"/><circle cx="256" cy="318" r="30" fill="#fff"/></svg><span class="word">Avoda</span></div>
+    <button class="me" data-act="settings" aria-label="הגדרות משתמש"><span id="me-name"></span><i id="me-letter"></i></button>
+  </header>
+
+  <!-- ===== עמוד 1: שעון ===== -->
+  <section class="view active" id="v-clock">
+    <div class="home" id="home">
+      <div class="status"><i></i><span id="status">מוכן להתחיל</span></div>
+      <div class="timer num" id="timer">00:00:00</div>
+      <div class="earn num" id="earn"></div>
+
+      <button class="punch" id="punch"></button>
+
+      <!-- שכחתי להתחיל / שינוי שעת התחלה -->
+      <button class="link" id="forgot-link"></button>
+      <div class="glass panel" id="forgot" hidden>
+        <h3 id="forgot-title">מתי התחלת?</h3>
+        <p class="sub">הטיימר ימשיך מהשעה שתבחר.</p>
+        <div class="field"><input class="input num" type="time" id="forgot-time" aria-label="שעת התחלה"></div>
+        <button class="btn btn-grad" id="forgot-go">התחל מהשעה הזו</button>
+        <button class="btn btn-text" id="forgot-cancel">ביטול</button>
+      </div>
+
+      <!-- סיום משמרת: טיפים, סכום ושמירה -->
+      <div class="glass panel" id="done" hidden>
+        <div class="done-total">
+          <div class="k">המשמרת הזו שווה</div>
+          <div class="v num" id="d-total">₪0</div>
+          <div class="s num" id="d-sub"></div>
+        </div>
+        <div class="field"><label for="d-tips">כמה טיפים קיבלת?</label><div class="money"><input class="input num" id="d-tips" inputmode="decimal" placeholder="0"></div></div>
+        <div class="quick">
+          <button type="button" data-tip="50">+50</button><button type="button" data-tip="100">+100</button><button type="button" data-tip="200">+200</button><button type="button" data-tip="0">איפוס</button>
+        </div>
+        <button class="btn btn-grad" id="d-save">שמירה</button>
+        <button class="btn btn-text" id="d-resume">לחצתי בטעות, להמשיך משמרת</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== עמוד 2: משמרות עבר ===== -->
+  <section class="view" id="v-history">
+    <h1 class="page-title">המשמרות שלי</h1>
+    <div class="month">
+      <button class="ib" data-month="-1" aria-label="חודש קודם"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      <b id="m-label"></b>
+      <button class="ib" data-month="1" aria-label="חודש הבא"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+    </div>
+    <div class="sum">
+      <div class="k">סה״כ החודש</div>
+      <div class="v num" id="m-total">₪0</div>
+      <div class="grid">
+        <div><b class="num" id="m-pay">₪0</b><span>שכר + נסיעות</span></div>
+        <div><b class="num" id="m-tips">₪0</b><span>טיפים</span></div>
+        <div><b class="num" id="m-hours">0</b><span>שעות</span></div>
+      </div>
+    </div>
+    <div class="list" id="m-list"></div>
+    <button class="btn btn-glass" data-act="add-shift">+ הוספת משמרת ששכחתי</button>
+  </section>
+</div>
+
+<nav class="tabs" id="tabs" hidden>
+  <button data-go="clock" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>שעון</button>
+  <button data-go="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>משמרות</button>
+</nav>
+
+<div class="overlay" id="overlay"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="grab"></div><div id="sheet-body"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* =========================================================
+   Avoda — שעון משמרות אישי
+   נתונים (localStorage):
+   { users:[{id,name,rate,travel,extras,shifts:[{id,start,end,tips}],running,pending}], current }
+   ========================================================= */
+const KEY='mishmeret.v3';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const n=v=>{const x=parseFloat(String(v??'').replace(/[^\d.]/g,''));return isNaN(x)?0:x};
+const nf=new Intl.NumberFormat('he-IL',{style:'currency',currency:'ILS',maximumFractionDigits:0});
+const money=v=>nf.format(Math.round(v));
+const h1=v=>(Math.round(v*10)/10).toLocaleString('he-IL');
+const pad=x=>String(x).padStart(2,'0');
+const hm=t=>{const d=new Date(t);return `${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+
+/* תוספות — כבויות כברירת מחדל */
+const EXTRAS={
+  ot:{on:false,after:8,pct:25},        // שעות נוספות: אחרי X שעות
+  night:{on:false,from:22,pct:25},     // תוספת לילה: משעה מסוימת
+  weekend:{on:false,pct:50}            // סופ״ש: שישי 16:00 עד מוצ״ש
+};
+
+/* ---------- טעינה + מעבר מגרסה קודמת ---------- */
+let db; try{db=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!db){
+  db={users:[],current:null};
+  try{const old=JSON.parse(localStorage.getItem('mishmeret.v2'));
+    old?.users?.forEach(u=>{const j=u.jobs[0]||{};db.users.push({id:u.id,name:u.name,rate:j.rate||0,travel:j.travel||0,
+      extras:structuredClone(EXTRAS),shifts:u.shifts.filter(s=>s.end).map(s=>({id:s.id,start:s.start,end:s.end,tips:n(s.cash)+n(s.card)})),running:null,pending:null})});
+    db.current=old?.current||null;}catch(e){}
+}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}};
+const me=()=>db.users.find(u=>u.id===db.current);
+let cur=new Date();cur.setDate(1);
+
+/* ---------- חישוב שכר ----------
+   עוברים על המשמרת בדקות; כל דקה מקבלת את התוספות שחלות עליה */
+function pay(u,start,end){
+  const x=u.extras, hours=Math.max(0,(end-start)/36e5);
+  if(!x.ot.on&&!x.night.on&&!x.weekend.on) return {hours,pay:hours*u.rate};
+  let total=0;
+  for(let t=start,i=0;t<end;t+=60000,i++){
+    const d=new Date(t),h=d.getHours(),day=d.getDay();
+    let m=1;
+    if(x.ot.on&&i/60>=x.ot.after) m+=i/60>=x.ot.after+2?Math.max(x.ot.pct,50)/100:x.ot.pct/100;
+    if(x.night.on&&(h>=x.night.from||h<6)) m+=x.night.pct/100;
+    if(x.weekend.on&&((day===5&&h>=16)||day===6)) m+=x.weekend.pct/100;
+    total+=Math.min(60000,end-t)/36e5*u.rate*m;
+  }
+  return {hours,pay:total};
+}
+
+/* ================= רינדור ================= */
+function render(){
+  const u=me();
+  $('#welcome').hidden=!!u;$('#main').hidden=!u;$('#tabs').hidden=!u;
+  if(!u){
+    $('#users').innerHTML=db.users.map(x=>`<button class="user" data-login="${x.id}"><i>${esc(x.name.trim()[0]||'?')}</i><b>${esc(x.name)}</b></button>`).join('');
+    return;
+  }
+  $('#me-name').textContent=u.name;$('#me-letter').textContent=u.name.trim()[0]||'?';
+  renderClock();renderHistory();
+}
+
+/* ----- עמוד שעון ----- */
+let forgotOpen=false;
+function renderClock(){
+  const u=me(), r=u.running, p=u.pending;
+  $('#home').classList.toggle('running',!!r);
+  $('#punch').hidden=!!p;
+  $('#done').hidden=!p;
+  $('#forgot').hidden=!forgotOpen||!!p;
+  $('#forgot-link').hidden=forgotOpen||!!p;
+  $('#punch').innerHTML=r?'סיום<small>משמרת</small>':'התחלת<br>משמרת';
+  $('#forgot-link').textContent=r?'שינוי שעת התחלה':'שכחתי להתחיל';
+  $('#forgot-title').textContent=r?'מתי התחלת באמת?':'מתי התחלת?';
+  if(p){
+    const c=pay(u,p.start,p.end);
+    $('#status').textContent='המשמרת הסתיימה';
+    $('#timer').textContent=fmtDur(p.end-p.start);
+    $('#earn').innerHTML=`${hm(p.start)} – ${hm(p.end)}`;
+    updateDone();
+  }else if(r){
+    $('#status').textContent=`במשמרת מ-${hm(r.start)}`;
+  }else{
+    $('#status').textContent='מוכן להתחיל';
+  }
+  tick();
+}
+function fmtDur(ms){const s=Math.max(0,Math.floor(ms/1000));return `${pad(Math.floor(s/3600))}:${pad(Math.floor(s/60)%60)}:${pad(s%60)}`}
+function tick(){
+  const u=me();if(!u||u.pending)return;
+  const r=u.running;
+  if(!r){$('#timer').textContent='00:00:00';$('#earn').innerHTML=`${money(u.rate)} לשעה`;return}
+  $('#timer').textContent=fmtDur(Date.now()-r.start);
+  $('#earn').innerHTML=`הרווחת עד עכשיו <b>${money(pay(u,r.start,Date.now()).pay)}</b>`;
+}
+setInterval(tick,1000);
+function updateDone(){
+  const u=me(),p=u.pending;if(!p)return;
+  const c=pay(u,p.start,p.end),tips=n($('#d-tips').value);
+  $('#d-total').textContent=money(c.pay+u.travel+tips);
+  $('#d-sub').innerHTML=`${h1(c.hours)} שעות · שכר <b>${money(c.pay)}</b>${u.travel?` · נסיעות <b>${money(u.travel)}</b>`:''}${tips?` · טיפים <b>${money(tips)}</b>`:''}`;
+}
+
+/* כפתור ראשי: התחלה / סיום */
+$('#punch').onclick=()=>{
+  const u=me();
+  if(!u.running){u.running={start:Date.now()};save();toast('משמרת טובה');navigator.vibrate?.(30)}
+  else{u.pending={start:u.running.start,end:Date.now()};u.running=null;$('#d-tips').value='';save();navigator.vibrate?.([20,40,20]);
+    setTimeout(()=>$('#d-tips').focus(),300)}
+  forgotOpen=false;renderClock();
+};
+
+/* שכחתי להתחיל / שינוי שעת התחלה */
+$('#forgot-link').onclick=()=>{
+  const u=me(),base=u.running?u.running.start:Date.now()-36e5;
+  $('#forgot-time').value=hm(base);forgotOpen=true;renderClock();$('#forgot-time').focus();
+};
+$('#forgot-cancel').onclick=()=>{forgotOpen=false;renderClock()};
+$('#forgot-go').onclick=()=>{
+  const [h,m]=($('#forgot-time').value||'').split(':').map(Number);
+  if(isNaN(h))return toast('בחר שעה');
+  const d=new Date();d.setHours(h,m,0,0);
+  if(d.getTime()>Date.now())d.setDate(d.getDate()-1);   // שעה עתידית = אתמול
+  const u=me();u.running={start:d.getTime()};save();forgotOpen=false;renderClock();
+  toast(`הטיימר רץ מ-${hm(d)}`);
+};
+
+/* סיום: טיפים ושמירה */
+$('#d-tips').addEventListener('input',updateDone);
+$$('[data-tip]').forEach(b=>b.onclick=()=>{const v=+b.dataset.tip;$('#d-tips').value=v?n($('#d-tips').value)+v:'';updateDone()});
+$('#d-save').onclick=()=>{
+  const u=me(),p=u.pending,c=pay(u,p.start,p.end),tips=n($('#d-tips').value);
+  u.shifts.push({id:uid(),start:p.start,end:p.end,tips});u.pending=null;save();
+  toast(`נשמר · ${money(c.pay+u.travel+tips)}`);renderClock();renderHistory();
+};
+$('#d-resume').onclick=()=>{const u=me();u.running={start:u.pending.start};u.pending=null;save();renderClock()};
+
+/* ----- עמוד משמרות ----- */
+function renderHistory(){
+  const u=me(),y=cur.getFullYear(),m=cur.getMonth();
+  $('#m-label').textContent=`${MONTHS[m]} ${y}`;
+  const list=u.shifts.filter(s=>{const d=new Date(s.start);return d.getFullYear()===y&&d.getMonth()===m}).sort((a,b)=>b.start-a.start);
+  let P=0,T=0,H=0;
+  $('#m-list').innerHTML=list.length?list.map(s=>{
+    const c=pay(u,s.start,s.end),d=new Date(s.start);P+=c.pay+u.travel;T+=n(s.tips);H+=c.hours;
+    return `<button class="item" data-edit="${s.id}">
+      <div class="day"><b class="num">${d.getDate()}</b><span>${DAYS[d.getDay()]}</span></div>
+      <div class="mid"><div class="t num">${hm(s.start)} – ${hm(s.end)}</div><div class="m">${h1(c.hours)} שעות</div></div>
+      <div class="end"><div class="p num">${money(c.pay+u.travel)}</div>${s.tips?`<div class="tp num">+${money(s.tips)} טיפים</div>`:''}</div>
+    </button>`}).join(''):`<div class="empty">אין משמרות בחודש הזה</div>`;
+  $('#m-total').textContent=money(P+T);$('#m-pay').textContent=money(P);$('#m-tips').textContent=money(T);$('#m-hours').textContent=h1(H);
+}
+
+/* ================= חלונות ================= */
+function openSheet(html,ready){
+  $('#sheet-body').innerHTML='<div>'+html+'</div>';
+  $('#overlay').classList.add('open');$('#sheet').classList.add('open');
+  ready&&ready($('#sheet-body'));
+}
+function closeSheet(){$('#overlay').classList.remove('open');$('#sheet').classList.remove('open')}
+$('#overlay').onclick=closeSheet;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+
+/* הוספה / עריכה של משמרת */
+function shiftSheet(s){
+  const u=me(),isNew=!s;
+  if(isNew){const y=new Date();y.setDate(y.getDate()-1);y.setHours(19,0,0,0);s={start:y.getTime(),end:y.getTime()+7*36e5,tips:0}}
+  const d=new Date(s.start),date=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  openSheet(`<h2>${isNew?'הוספת משמרת':'עריכת משמרת'}</h2>
+    <div class="field"><label for="e-date">תאריך</label><input class="input num" type="date" id="e-date" value="${date}"></div>
+    <div class="row2">
+      <div class="field"><label for="e-start">התחלה</label><input class="input num" type="time" id="e-start" value="${hm(s.start)}"></div>
+      <div class="field"><label for="e-end">סיום</label><input class="input num" type="time" id="e-end" value="${hm(s.end)}"></div>
+    </div>
+    <div class="field"><label for="e-tips">טיפים</label><div class="money"><input class="input num" id="e-tips" inputmode="decimal" placeholder="0" value="${s.tips||''}"></div></div>
+    <button class="btn btn-grad" id="e-save">שמירה</button>
+    ${isNew?'':'<button class="btn btn-danger" id="e-del">מחיקת משמרת</button>'}`,b=>{
+    b.querySelector('#e-save').onclick=()=>{
+      const [sh,sm]=$('#e-start').value.split(':').map(Number),[eh,em]=$('#e-end').value.split(':').map(Number);
+      const st=new Date($('#e-date').value+'T00:00');if(isNaN(st)||isNaN(sh)||isNaN(eh))return toast('חסר תאריך או שעה');
+      st.setHours(sh,sm);const en=new Date(st);en.setHours(eh,em);if(en<=st)en.setDate(en.getDate()+1); // אחרי חצות
+      const data={start:st.getTime(),end:en.getTime(),tips:n($('#e-tips').value)};
+      if(isNew)u.shifts.push({id:uid(),...data});else Object.assign(s,data);
+      save();closeSheet();cur=new Date(st.getFullYear(),st.getMonth(),1);renderHistory();toast('נשמר');
+    };
+    const del=b.querySelector('#e-del');
+    if(del)del.onclick=()=>{if(!del.dataset.a){del.dataset.a=1;del.textContent='לחץ שוב למחיקה';return}
+      u.shifts=u.shifts.filter(x=>x!==s);save();closeSheet();renderHistory();toast('נמחק')};
+  });
+}
+
+/* משתמש חדש */
+function newUserSheet(){
+  openSheet(`<h2>בוא נתחיל</h2>
+    <div class="field"><label for="n-name">השם שלך</label><input class="input" id="n-name" autocomplete="given-name"></div>
+    <div class="row2">
+      <div class="field"><label for="n-rate">שכר לשעה</label><div class="money"><input class="input num" id="n-rate" inputmode="decimal"></div></div>
+      <div class="field"><label for="n-travel">נסיעות למשמרת</label><div class="money"><input class="input num" id="n-travel" inputmode="decimal" placeholder="0"></div></div>
+    </div>
+    <button class="btn btn-grad" id="n-go">יאללה</button>`,b=>{
+    setTimeout(()=>$('#n-name').focus(),400);
+    b.querySelector('#n-go').onclick=()=>{
+      const name=$('#n-name').value.trim(),rate=n($('#n-rate').value);
+      if(!name||!rate)return toast('צריך שם ושכר לשעה');
+      const u={id:uid(),name,rate,travel:n($('#n-travel').value),extras:structuredClone(EXTRAS),shifts:[],running:null,pending:null};
+      db.users.push(u);db.current=u.id;save();closeSheet();go('clock');render();
+    };
+  });
+}
+
+/* הגדרות משתמש: שכר, נסיעות ותוספות אופציונליות */
+function settingsSheet(){
+  const u=me(),x=u.extras;
+  const sw=(k,on)=>`<button class="switch" data-sw="${k}" role="switch" aria-checked="${on}" aria-label="הפעלה"></button>`;
+  openSheet(`<h2>ההגדרות של ${esc(u.name)}</h2>
+    <div class="row2">
+      <div class="field"><label for="s-rate">שכר לשעה</label><div class="money"><input class="input num" id="s-rate" inputmode="decimal" value="${u.rate}"></div></div>
+      <div class="field"><label for="s-travel">נסיעות למשמרת</label><div class="money"><input class="input num" id="s-travel" inputmode="decimal" value="${u.travel||''}" placeholder="0"></div></div>
+    </div>
+    <div class="sec">תוספות (לא חובה)</div>
+    <div class="opt"><div class="opt-head"><div><b>שעות נוספות</b><span>אחרי מספר שעות במשמרת</span></div>${sw('ot',x.ot.on)}</div>
+      <div class="row2" data-box="ot" ${x.ot.on?'':'hidden'}>
+        <div class="field"><label>אחרי כמה שעות</label><input class="input num" data-x="ot.after" inputmode="decimal" value="${x.ot.after}"></div>
+        <div class="field"><label>תוספת %</label><input class="input num" data-x="ot.pct" inputmode="decimal" value="${x.ot.pct}"></div></div></div>
+    <div class="opt"><div class="opt-head"><div><b>תוספת לילה</b><span>משעה מסוימת ועד 06:00</span></div>${sw('night',x.night.on)}</div>
+      <div class="row2" data-box="night" ${x.night.on?'':'hidden'}>
+        <div class="field"><label>מאיזו שעה</label><input class="input num" data-x="night.from" inputmode="numeric" value="${x.night.from}"></div>
+        <div class="field"><label>תוספת %</label><input class="input num" data-x="night.pct" inputmode="decimal" value="${x.night.pct}"></div></div></div>
+    <div class="opt"><div class="opt-head"><div><b>תוספת סופ״ש</b><span>שישי מ-16:00 ועד סוף שבת</span></div>${sw('weekend',x.weekend.on)}</div>
+      <div class="row2" data-box="weekend" ${x.weekend.on?'':'hidden'}>
+        <div class="field" style="grid-column:1/-1"><label>תוספת %</label><input class="input num" data-x="weekend.pct" inputmode="decimal" value="${x.weekend.pct}"></div></div></div>
+    <button class="btn btn-grad" id="s-save" style="margin-top:8px">שמירה</button>
+    <button class="btn btn-text" id="s-switch">החלפת משתמש</button>
+    <button class="btn btn-danger" id="s-del">מחיקת המשתמש</button>`,b=>{
+    b.querySelectorAll('[data-sw]').forEach(s=>s.onclick=()=>{const on=s.getAttribute('aria-checked')!=='true';s.setAttribute('aria-checked',on);b.querySelector(`[data-box="${s.dataset.sw}"]`).hidden=!on});
+    b.querySelector('#s-save').onclick=()=>{
+      u.rate=n($('#s-rate').value)||u.rate;u.travel=n($('#s-travel').value);
+      b.querySelectorAll('[data-sw]').forEach(s=>x[s.dataset.sw].on=s.getAttribute('aria-checked')==='true');
+      b.querySelectorAll('[data-x]').forEach(i=>{const [k,f]=i.dataset.x.split('.');x[k][f]=n(i.value)});
+      save();closeSheet();render();toast('נשמר');
+    };
+    b.querySelector('#s-switch').onclick=()=>{db.current=null;save();closeSheet();render()};
+    const del=b.querySelector('#s-del');
+    del.onclick=()=>{if(!del.dataset.a){del.dataset.a=1;del.textContent='בטוח? זה ימחק את כל המשמרות';return}
+      db.users=db.users.filter(z=>z.id!==u.id);db.current=null;save();closeSheet();render()};
+  });
+}
+
+/* ================= ניווט ואירועים ================= */
+function go(v){
+  $$('.view').forEach(x=>x.classList.toggle('active',x.id==='v-'+v));
+  $$('#tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.go===v?'page':'false'));
+  window.scrollTo(0,0);
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-go],[data-month],[data-edit],[data-login],[data-act]');if(!t)return;
+  const d=t.dataset;
+  if(d.go)go(d.go);
+  else if(d.month){cur=new Date(cur.getFullYear(),cur.getMonth()+ +d.month,1);renderHistory()}
+  else if(d.edit)shiftSheet(me().shifts.find(s=>s.id===d.edit));
+  else if(d.login){db.current=d.login;save();go('clock');render()}
+  else if(d.act==='new-user')newUserSheet();
+  else if(d.act==='settings')settingsSheet();
+  else if(d.act==='add-shift')shiftSheet();
+});
+
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2300)}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&me())renderClock()});
+
+render();
+if(!db.users.length)setTimeout(newUserSheet,300);
+</script>
+</body>
+</html>
